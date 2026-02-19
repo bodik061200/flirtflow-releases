@@ -4,7 +4,7 @@
 #   1. Windows .exe is built + published to GitHub Release ✅
 #   2. Obfuscated source is uploaded as source-protected.zip ✅
 #   3. This workflow detects the new release
-#   4. Downloads source-protected.zip, builds Mac .dmg ✅
+#   4. Waits for source-protected.zip, downloads it, builds Mac .dmg ✅
 #   5. Uploads .dmg to the SAME release ✅
 #
 # Result: One command → both platforms in Releases
@@ -20,11 +20,21 @@ jobs:
     runs-on: macos-latest
     
     steps:
-      - name: Download protected source from release
+      - name: Wait for source zip and download
         run: |
-          gh release download "${{ github.event.release.tag_name }}" \
-            --pattern "source-protected.zip" \
-            --repo bodik061200/flirtflow-releases
+          echo "⏳ Waiting for source-protected.zip in release ${{ github.event.release.tag_name }}..."
+          for i in $(seq 1 30); do
+            if gh release download "${{ github.event.release.tag_name }}" \
+              --pattern "source-protected.zip" \
+              --repo bodik061200/flirtflow-releases 2>/dev/null; then
+              echo "✅ Downloaded source-protected.zip"
+              exit 0
+            fi
+            echo "   Attempt $i/30 — not ready yet, waiting 10s..."
+            sleep 10
+          done
+          echo "❌ source-protected.zip not found after 5 minutes"
+          exit 1
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
 
