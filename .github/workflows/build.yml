@@ -1,0 +1,46 @@
+# FlirtFlow — Auto-Build Mac on Release
+# 
+# When you run `npm run publish:protected` locally:
+#   1. Windows .exe is built + published to GitHub Release ✅
+#   2. Obfuscated source is uploaded as source-protected.zip ✅
+#   3. This workflow detects the new release
+#   4. Downloads source-protected.zip, builds Mac .dmg ✅
+#   5. Uploads .dmg to the SAME release ✅
+#
+# Result: One command → both platforms in Releases
+
+name: Build Mac on Release
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  build-mac:
+    runs-on: macos-latest
+    
+    steps:
+      - name: Download protected source from release
+        run: |
+          gh release download "${{ github.event.release.tag_name }}" \
+            --pattern "source-protected.zip" \
+            --repo bodik061200/flirtflow-releases
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+
+      - name: Extract source
+        run: unzip source-protected.zip -d .
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build & upload Mac to existing release
+        run: npx electron-builder --mac --publish always
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          EP_GH_IGNORE_TIME: true
