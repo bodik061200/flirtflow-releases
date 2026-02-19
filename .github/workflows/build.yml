@@ -39,7 +39,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
 
       - name: Extract source
-        run: python3 -c "import zipfile; zipfile.ZipFile('source-protected.zip').extractall('.')"
+        run: unzip source-protected.zip -d .
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
