@@ -1,19 +1,13 @@
-# FlirtFlow — Auto-Build Mac on Release
-# 
-# When you run `npm run publish:protected` locally:
-#   1. Windows .exe is built + published to GitHub Release ✅
-#   2. Obfuscated source is uploaded as source-protected.zip ✅
-#   3. This workflow detects the new release
-#   4. Waits for source-protected.zip, downloads it, builds Mac .dmg ✅
-#   5. Uploads .dmg to the SAME release ✅
-#
-# Result: One command → both platforms in Releases
-
 name: Build Mac on Release
 
 on:
   release:
     types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag (e.g. v1.0.45)'
+        required: true
 
 jobs:
   build-mac:
@@ -22,9 +16,10 @@ jobs:
     steps:
       - name: Wait for source zip and download
         run: |
-          echo "⏳ Waiting for source-protected.zip in release ${{ github.event.release.tag_name }}..."
+          TAG="${{ github.event.release.tag_name || github.event.inputs.tag }}"
+          echo "⏳ Waiting for source-protected.zip in release ${TAG}..."
           for i in $(seq 1 30); do
-            if gh release download "${{ github.event.release.tag_name }}" \
+            if gh release download "${TAG}" \
               --pattern "source-protected.zip" \
               --repo bodik061200/flirtflow-releases 2>/dev/null; then
               echo "✅ Downloaded source-protected.zip"
